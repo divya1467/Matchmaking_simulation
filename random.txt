@@ -1,0 +1,38 @@
+matchmaking-service/
+│
+├── CMakeLists.txt
+├── Dockerfile
+├── README.md
+│
+├── include/
+│   ├── models/
+│   │   ├── Player.h
+│   │   ├── Match.h
+│   │   └── GameMode.h
+│   │
+│   ├── core/
+│   │   ├── Matchmaker.h
+│   │   └── ThreadPool.h
+│   │
+│   └── server/
+│       └── HttpServer.h
+│
+├── src/
+│   ├── main.cpp
+│   │
+│   ├── models/
+│   │   ├── Player.cpp
+│   │   └── Match.cpp
+│   │
+│   ├── core/
+│   │   ├── Matchmaker.cpp
+│   │   └── ThreadPool.cpp
+│   │
+│   └── server/
+│       └── HttpServer.cpp
+│
+├── external/
+│   └── httplib.h     (header-only library)
+│
+└── load_test/
+    └── load_test.cpp
