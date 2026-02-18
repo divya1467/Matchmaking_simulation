@@ -1,14 +1,27 @@
 #pragma once
 
 #include <vector>
+#include <cstddef>
 
-#include "Player.hpp"
+#include <Player.hpp>
+#include <GameMode.hpp>
 
 namespace models {
-    struct Match {
-        std::string matchId;
-        std::vector<Player> players;
-        std::chrono::system_clock::time_point startTime;
-        GameMode gameMode;
-    };
-}//namespace models
+
+class Match {
+public:
+    Match(GameMode mode, std::vector<const Player*> players);
+
+    GameMode getGameMode() const;
+
+    const std::vector<const Player*>& getPlayers() const;
+
+    void startMatch();
+
+private:
+    GameMode gameMode;
+
+    std::vector<const Player*> players;
+};
+
+} // namespace models

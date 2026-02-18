@@ -3,31 +3,30 @@
 #include <set>
 #include <vector>
 #include <mutex>
-#include "models/Player.hpp"
-#include "models/Match.hpp"
+#include <Player.hpp>
+#include <Match.hpp>
 
 namespace core {
 
 class Matchmaker {
 public:
-    Matchmaker(size_t playersPerMatch, int skillTolerance);
+    Matchmaker(int skillTolerance);
 
-    void addPlayer(const Player& player);
-    std::vector<Match> getCompletedMatches();
+    void addPlayer(const models::Player* player);
+    std::vector<models::Match> getCompletedMatches();
+    void tryCreateMatch(const models::GameMode& mode);
 
 private:
-    void tryCreateMatch(const std::string& mode);
 
-    size_t playersPerMatch;
     int skillTolerance;
     int matchCounter;
 
     std::unordered_map<
-        std::string,
-        std::multiset<Player, SkillComparator>
+        models::GameMode,
+        std::multiset<const models::Player*, models::skillComparator>
     > waitingPools;
 
-    std::vector<Match> completedMatches;
+    std::vector<models::Match> completedMatches;
 
     std::mutex matchMutex;
 };

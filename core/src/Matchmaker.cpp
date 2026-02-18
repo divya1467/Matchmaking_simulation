@@ -1,47 +1,97 @@
 #include "Matchmaker.hpp"
 
-namespace core{
-   Matchmaker(size_t playersPerMatch, int skillTolerance):
-    playersPerMatch(playersPerMatch),
-    skillTolerance(skillTolerance),
-    matchCounter(0) {}
+namespace core
+{
 
-    void Matchmaker::addPlayer(const Player& player) {
+    Matchmaker::Matchmaker(int skillTolerance)
+        : skillTolerance(skillTolerance),
+          matchCounter(0) {}
+
+    void Matchmaker::addPlayer(const models::Player *player)
+    {
         std::lock_guard<std::mutex> lock(matchMutex);
-        waitingPools[player.gameMode].insert(player);
-        tryCreateMatch(std::to_string(static_cast<int>(player.gameMode)));
+
+        waitingPools[player->getGameMode()].insert(player);
+
+        tryCreateMatch(player->getGameMode());
     }
 
-    void Matchmaker::tryCreateMatch(const std::string& mode) {
-        auto& pool = waitingPools[mode];
-        while (pool.size() >= playersPerMatch) {
-            std::vector<Player> matchPlayers;
+    void Matchmaker::tryCreateMatch(const models::GameMode &mode)
+    {
+
+        auto &pool = waitingPools[mode];
+        size_t requiredPlayers = models::getTeamSize(mode);
+
+        while (pool.size() >= requiredPlayers)
+        {
+
+            std::vector<const models::Player *> matchPlayers;
+
             auto it = pool.begin();
-            matchPlayers.push_back(*it);
+            const models::Player *firstPlayer = *it;
+
+            int baseRating = firstPlayer->getRating();
+
+            matchPlayers.push_back(firstPlayer);
             pool.erase(it);
 
-            for (size_t i = 1; i < playersPerMatch; ++i) {
-                it = pool.lower_bound(Player{"", matchPlayers[0].rating - skillTolerance, static_cast<GameMode>(std::stoi(mode)), std::chrono::system_clock::now()});
-                if (it == pool.end() || it->rating > matchPlayers[0].rating + skillTolerance) {
-                    break;
+            for (auto iter = pool.begin();
+                 iter != pool.end() && matchPlayers.size() < requiredPlayers;)
+            {
+
+                int rating = (*iter)->getRating();
+
+                if (rating >= baseRating - skillTolerance &&
+                    rating <= baseRating + skillTolerance)
+                {
+
+                    matchPlayers.push_back(*iter);
+                    iter = pool.erase(iter);
                 }
-                matchPlayers.push_back(*it);
-                pool.erase(it);
+                else
+                {
+                    ++iter;
+                }
             }
 
-            if (matchPlayers.size() == playersPerMatch) {
-                completedMatches.push_back(Match{
-                    "match_" + std::to_string(matchCounter++),
-                    matchPlayers,
-                    std::chrono::system_clock::now(),
-                    static_cast<GameMode>(std::stoi(mode))
-                });
-            } else {
-                for (const auto& player : matchPlayers) {
+            if (matchPlayers.size() == requiredPlayers)
+            {
+
+                std::vector<models::Player> playersCopy;
+                playersCopy.reserve(requiredPlayers);
+
+                for (auto *p : matchPlayers)
+                {
+                    playersCopy.push_back(*p);
+                }
+
+                completedMatches.push_back(
+                    models::Match{
+                        mode,
+                        std::move(matchPlayers)});
+            }
+            else
+            {
+
+                for (auto *player : matchPlayers)
+                {
                     pool.insert(player);
                 }
+
                 break;
             }
         }
     }
+
+    std::vector<models::Match> Matchmaker::getCompletedMatches()
+    {
+
+        std::lock_guard<std::mutex> lock(matchMutex);
+
+        std::vector<models::Match> matches = completedMatches;
+        completedMatches.clear();
+
+        return matches;
+    }
+
 }

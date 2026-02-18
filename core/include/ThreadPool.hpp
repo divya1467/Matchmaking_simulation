@@ -14,6 +14,8 @@ namespace core {
         ~ThreadPool();
 
         void enqueue(std::function<void()> task);
+        void shutdown();
+        void wait();
 
     private:
         void workerThread();
@@ -24,5 +26,7 @@ namespace core {
         std::mutex queueMutex;
         std::condition_variable condition;
         bool stop;
+        std::atomic<size_t> activeTasks{0};
+        std::condition_variable finishedCondition;
     };
 }//namespace core

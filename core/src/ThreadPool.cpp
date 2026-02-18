@@ -8,14 +8,25 @@ namespace core {
     }
 
     ThreadPool::~ThreadPool() {
+        shutdown();
+        for (std::thread& worker : workers) {
+            if (worker.joinable()) {
+                worker.join();
+            }
+        }
+    }
+
+    void ThreadPool::shutdown() {
         {
             std::unique_lock<std::mutex> lock(queueMutex);
             stop = true;
         }
         condition.notify_all();
-        for (std::thread &worker : workers) {
-            worker.join();
-        }
+    }
+
+    void ThreadPool::wait() {
+        std::unique_lock<std::mutex> lock(queueMutex);
+        finishedCondition.wait(lock, [this] { return activeTasks == 0 && tasks.empty(); });
     }
 
     void ThreadPool::enqueue(std::function<void()> task) {
@@ -40,8 +51,16 @@ namespace core {
                 }
                 task = std::move(tasks.front());
                 tasks.pop();
+                ++activeTasks;
             }
             task();
+            {
+                std::unique_lock<std::mutex> lock(queueMutex);
+                --activeTasks;
+                if (activeTasks == 0 && tasks.empty()) {
+                    finishedCondition.notify_all();
+                }
+            }
         }
     }
 }//namespace core

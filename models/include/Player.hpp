@@ -3,48 +3,36 @@
 #include <string>
 #include <chrono>
 
+#include "GameMode.hpp"
+
 namespace models {
-    enum class GameMode{
-        Solo,
-        Duo,
-        Squad
-    };
 
-    struct Player {
-        std::string Id;
-        int16_t rating;
-        GameMode gameMode;
-        std::chrono::system_clock::time_point joinTime;
-    };
 
-    struct skillComparator {
-        bool operator()(const Player& a, const Player& b) const {
-            if (a.rating == b.rating) {
-            return a.Id < b.Id; // tie-breaker
-        }
-            return a.rating < b.rating;
-        }
-    };
-
-    class player {
+    class Player {
     public:
-        player(const std::string& id, int16_t rating, GameMode mode)
-            : Id(id), rating(rating), gameMode(mode), joinTime(std::chrono::system_clock::now()) {}
+        Player(const std::string& id, int16_t rating, GameMode mode);
 
-        std::string getId() const { return Id; }
-        int16_t getRating() const { return rating; }
-        GameMode getGameMode() const { return gameMode; }
-        std::chrono::system_clock::time_point getJoinTime() const { return joinTime; }
+        std::string getId() const;
+        int16_t getRating() const;
+        GameMode getGameMode() const;
+        std::chrono::system_clock::time_point getJoinTime() const;
 
     private:
         std::string Id;
         int16_t rating;
         GameMode gameMode;
         std::chrono::system_clock::time_point joinTime;
-    }
+    };
 
 
-
+    struct skillComparator {
+        bool operator()(const Player* a, const Player* b) const {
+            if (a->getRating() == b->getRating()) {
+            return a->getId() < b->getId(); // tie-breaker
+        }
+            return a->getRating() < b->getRating();
+        }
+    };
 
 }
 //namespace models
